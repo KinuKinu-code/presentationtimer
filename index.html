@@ -339,7 +339,6 @@
 
         progressCircle.style.strokeDasharray = circumference;
 
-        // Initialize Web Audio Context on user interaction
         function initAudio() {
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -349,23 +348,19 @@
             }
         }
 
-        // Helper to synthesize a realistic bell/chime note
         function playBellTone(freq, startTime, duration = 1.5) {
             if (!audioCtx) return;
 
-            // Fundamental Tone (Main Pitch)
             const osc1 = audioCtx.createOscillator();
             const gain1 = audioCtx.createGain();
             osc1.type = 'sine';
             osc1.frequency.setValueAtTime(freq, startTime);
 
-            // Overtone (Harmonic resonance for bell warmth)
             const osc2 = audioCtx.createOscillator();
             const gain2 = audioCtx.createGain();
             osc2.type = 'sine';
-            osc2.frequency.setValueAtTime(freq * 2.4, startTime); // Harmonic ratio
+            osc2.frequency.setValueAtTime(freq * 2.4, startTime);
 
-            // Exponential Volume Decay (Ring tail)
             gain1.gain.setValueAtTime(0.001, startTime);
             gain1.gain.exponentialRampToValueAtTime(0.3, startTime + 0.03);
             gain1.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
@@ -385,22 +380,19 @@
             osc2.stop(startTime + duration);
         }
 
-        // Plays 4-Note Westminster Bell Clock Chime Melody
         function playBellChime() {
             initAudio();
             const now = audioCtx.currentTime;
 
-            // Frequencies for Westminster Chime Notes
             const E4 = 329.63;
             const C4 = 261.63;
             const D4 = 293.66;
             const G3 = 196.00;
 
-            // Sequence: E4 -> C4 -> D4 -> G3 spaced by 0.75s
             playBellTone(E4, now + 0.0, 1.2);
             playBellTone(C4, now + 0.75, 1.2);
             playBellTone(D4, now + 1.5, 1.2);
-            playBellTone(G3, now + 2.25, 2.0); // Longer fade out on final note
+            playBellTone(G3, now + 2.25, 2.0);
         }
 
         function setProgress(percent) {
