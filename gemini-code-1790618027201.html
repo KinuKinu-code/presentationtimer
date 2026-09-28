@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presentation Timer</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-blue: #38bdf8;
+            --accent-amber: #f59e0b;
+            --accent-red: #ef4444;
+            --border-color: #334155;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .timer-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 24px;
+            width: 320px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        /* Compact Slide Embed Mode Styles */
+        body.compact-mode {
+            background-color: transparent;
+        }
+        body.compact-mode .timer-card {
+            background-color: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 220px;
+            padding: 16px;
+            box-shadow: none;
+        }
+        body.compact-mode .hide-in-compact {
+            display: none !important;
+        }
+
+        .header-row {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        .test-sound-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            padding: 3px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .test-sound-btn:hover {
+            background: var(--border-color);
+            color: var(--text-main);
+        }
+
+        /* Circular Countdown Ring Layout */
+        .timer-display-container {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 10px 0 20px 0;
+        }
+
+        body.compact-mode .timer-display-container {
+            width: 130px;
+            height: 130px;
+            margin: 5px 0 10px 0;
+        }
+
+        .progress-ring {
+            transform: rotate(-90deg);
+            width: 100%;
+            height: 100%;
+        }
+
+        .progress-ring__circle-bg {
+            fill: none;
+            stroke: var(--border-color);
+            stroke-width: 8;
+        }
+
+        .progress-ring__circle {
+            fill: none;
+            stroke: var(--accent-blue);
+            stroke-width: 8;
+            stroke-linecap: round;
+            stroke-dasharray: 502;
+            stroke-dashoffset: 0;
+            transition: stroke-dashoffset 0.5s linear, stroke 0.3s ease;
+        }
+
+        .time-text {
+            position: absolute;
+            font-size: 2.2rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.025em;
+        }
+
+        body.compact-mode .time-text {
+            font-size: 1.6rem;
+        }
+
+        /* Preset Buttons Selection */
+        .presets {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            width: 100%;
+            margin-bottom: 14px;
+        }
+
+        .preset-btn {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 6px 0;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+        .preset-btn.active {
+            background-color: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: var(--bg-color);
+        }
+
+        /* Custom Duration Row */
+        .custom-row {
+            display: flex;
+            gap: 6px;
+            width: 100%;
+            margin-bottom: 16px;
+            align-items: center;
+        }
+
+        .custom-input {
+            flex: 1;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 6px 10px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+            outline: none;
+        }
+        .custom-input:focus {
+            border-color: var(--accent-blue);
+        }
+
+        .custom-btn {
+            background-color: var(--border-color);
+            border: none;
+            color: var(--text-main);
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .custom-btn:hover {
+            background-color: var(--accent-blue);
+            color: var(--bg-color);
+        }
+
+        /* Main Control Action Buttons */
+        .controls {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+            margin-bottom: 14px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 10px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn-primary {
+            background-color: var(--accent-blue);
+            color: var(--bg-color);
+        }
+
+        .btn-secondary {
+            background-color: var(--border-color);
+            color: var(--text-main);
+        }
+
+        .btn-danger {
+            background-color: rgba(239, 68, 68, 0.15);
+            color: var(--accent-red);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        /* Footer Slide Toggle Link */
+        .footer-action {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            background: none;
+            border: none;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 0;
+        }
+        .footer-action:hover {
+            color: var(--text-main);
+        }
+
+        /* States Styling */
+        .timer-card.warning .progress-ring__circle { stroke: var(--accent-amber); }
+        .timer-card.warning .time-text { color: var(--accent-amber); }
+
+        .timer-card.expired .progress-ring__circle { stroke: var(--accent-red); }
+        .timer-card.expired .time-text { color: var(--accent-red); }
+        .timer-card.expired {
+            animation: pulse-border 1.5s infinite;
+        }
+
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="timer-card" id="timerCard">
+        <div class="header-row">
+            <h1 class="title">Presentation Timer</h1>
+            <button class="test-sound-btn hide-in-compact" onclick="playBellChime()">🔔 Test Chime</button>
+        </div>
+
+        <div class="timer-display-container">
+            <svg class="progress-ring" viewBox="0 0 180 180">
+                <circle class="progress-ring__circle-bg" cx="90" cy="90" r="80" />
+                <circle class="progress-ring__circle" id="progressCircle" cx="90" cy="90" r="80" />
+            </svg>
+            <div class="time-text" id="timeDisplay">01:30</div>
+        </div>
+
+        <!-- Presets -->
+        <div class="presets hide-in-compact">
+            <button class="preset-btn active" onclick="setPreset(1.5, event)">1.5m</button>
+            <button class="preset-btn" onclick="setPreset(2, event)">2m</button>
+            <button class="preset-btn" onclick="setPreset(3, event)">3m</button>
+            <button class="preset-btn" onclick="setPreset(5, event)">5m</button>
+            <button class="preset-btn" onclick="setPreset(10, event)">10m</button>
+        </div>
+
+        <!-- Custom Input -->
+        <div class="custom-row hide-in-compact">
+            <input type="number" id="customMinutes" class="custom-input" placeholder="Custom mins" step="0.5" min="0.1">
+            <button class="custom-btn" onclick="setCustomTime()">Set</button>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <button class="btn btn-primary" id="startBtn" onclick="toggleTimer()">Start</button>
+            <button class="btn btn-secondary hide-in-compact" onclick="resetTimer()">Reset</button>
+            <button class="btn btn-danger hide-in-compact" onclick="addExtraMinute()">+1 Min</button>
+        </div>
+
+        <button class="footer-action hide-in-compact" onclick="toggleCompactMode()">Toggle Compact Slide Mode</button>
+    </div>
+
+    <script>
+        let totalSeconds = 90;
+        let remainingSeconds = 90;
+        let timerId = null;
+        let isRunning = false;
+        let hasAlerted = false;
+        let audioCtx = null;
+
+        const radius = 80;
+        const circumference = 2 * Math.PI * radius;
+        const progressCircle = document.getElementById('progressCircle');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const timerCard = document.getElementById('timerCard');
+        const startBtn = document.getElementById('startBtn');
+
+        progressCircle.style.strokeDasharray = circumference;
+
+        // Initialize Web Audio Context on user interaction
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // Helper to synthesize a realistic bell/chime note
+        function playBellTone(freq, startTime, duration = 1.5) {
+            if (!audioCtx) return;
+
+            // Fundamental Tone (Main Pitch)
+            const osc1 = audioCtx.createOscillator();
+            const gain1 = audioCtx.createGain();
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(freq, startTime);
+
+            // Overtone (Harmonic resonance for bell warmth)
+            const osc2 = audioCtx.createOscillator();
+            const gain2 = audioCtx.createGain();
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(freq * 2.4, startTime); // Harmonic ratio
+
+            // Exponential Volume Decay (Ring tail)
+            gain1.gain.setValueAtTime(0.001, startTime);
+            gain1.gain.exponentialRampToValueAtTime(0.3, startTime + 0.03);
+            gain1.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+            gain2.gain.setValueAtTime(0.001, startTime);
+            gain2.gain.exponentialRampToValueAtTime(0.1, startTime + 0.02);
+            gain2.gain.exponentialRampToValueAtTime(0.0001, startTime + (duration * 0.5));
+
+            osc1.connect(gain1);
+            osc2.connect(gain2);
+            gain1.connect(audioCtx.destination);
+            gain2.connect(audioCtx.destination);
+
+            osc1.start(startTime);
+            osc2.start(startTime);
+            osc1.stop(startTime + duration);
+            osc2.stop(startTime + duration);
+        }
+
+        // Plays 4-Note Westminster Bell Clock Chime Melody
+        function playBellChime() {
+            initAudio();
+            const now = audioCtx.currentTime;
+
+            // Frequencies for Westminster Chime Notes
+            const E4 = 329.63;
+            const C4 = 261.63;
+            const D4 = 293.66;
+            const G3 = 196.00;
+
+            // Sequence: E4 -> C4 -> D4 -> G3 spaced by 0.75s
+            playBellTone(E4, now + 0.0, 1.2);
+            playBellTone(C4, now + 0.75, 1.2);
+            playBellTone(D4, now + 1.5, 1.2);
+            playBellTone(G3, now + 2.25, 2.0); // Longer fade out on final note
+        }
+
+        function setProgress(percent) {
+            const offset = circumference - (percent / 100) * circumference;
+            progressCircle.style.strokeDashoffset = offset;
+        }
+
+        function formatTime(seconds) {
+            const absSecs = Math.abs(seconds);
+            const mins = Math.floor(absSecs / 60);
+            const secs = absSecs % 60;
+            const paddedMins = String(mins).padStart(2, '0');
+            const paddedSecs = String(secs).padStart(2, '0');
+            
+            if (seconds < 0) {
+                return `-${paddedMins}:${paddedSecs}`;
+            }
+            return `${paddedMins}:${paddedSecs}`;
+        }
+
+        function updateDisplay() {
+            timeDisplay.textContent = formatTime(remainingSeconds);
+            
+            let percentage = (remainingSeconds / totalSeconds) * 100;
+            if (percentage < 0) percentage = 0;
+            setProgress(percentage);
+
+            timerCard.classList.remove('warning', 'expired');
+            if (remainingSeconds < 0) {
+                timerCard.classList.add('expired');
+            } else if (remainingSeconds <= 60 && totalSeconds > 60) {
+                timerCard.classList.add('warning');
+            }
+        }
+
+        function toggleTimer() {
+            initAudio();
+
+            if (isRunning) {
+                clearInterval(timerId);
+                isRunning = false;
+                startBtn.textContent = "Resume";
+                startBtn.classList.remove('btn-secondary');
+                startBtn.classList.add('btn-primary');
+            } else {
+                if (remainingSeconds <= 0) {
+                    resetTimer();
+                }
+                isRunning = true;
+                hasAlerted = false;
+                startBtn.textContent = "Pause";
+                startBtn.classList.remove('btn-primary');
+                startBtn.classList.add('btn-secondary');
+
+                timerId = setInterval(() => {
+                    remainingSeconds--;
+                    updateDisplay();
+
+                    if (remainingSeconds === 0 && !hasAlerted) {
+                        hasAlerted = true;
+                        playBellChime();
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerId);
+            isRunning = false;
+            hasAlerted = false;
+            startBtn.textContent = "Start";
+            startBtn.classList.remove('btn-secondary');
+            startBtn.classList.add('btn-primary');
+            remainingSeconds = totalSeconds;
+            updateDisplay();
+        }
+
+        function setPreset(minutes, evt) {
+            initAudio();
+            document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+            if (evt && evt.target) {
+                evt.target.classList.add('active');
+            }
+            
+            totalSeconds = minutes * 60;
+            resetTimer();
+        }
+
+        function setCustomTime() {
+            initAudio();
+            const val = parseFloat(document.getElementById('customMinutes').value);
+            if (!isNaN(val) && val > 0) {
+                document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+                totalSeconds = Math.round(val * 60);
+                resetTimer();
+            }
+        }
+
+        function addExtraMinute() {
+            remainingSeconds += 60;
+            totalSeconds += 60;
+            updateDisplay();
+        }
+
+        function toggleCompactMode() {
+            document.body.classList.toggle('compact-mode');
+        }
+
+        updateDisplay();
+    </script>
+</body>
+</html>
